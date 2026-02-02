@@ -25,7 +25,7 @@ public:
 	float MoveSpeed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool BIsFalling;
+	bool bIsFalling;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	class AMyCharacter* MyCharacter;

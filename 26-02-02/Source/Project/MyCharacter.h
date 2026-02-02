@@ -25,7 +25,8 @@ class PROJECT_API AMyCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* LookAction;
 
-	
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* AttackAction;
 
 public:
 	// Sets default values for this character's properties
@@ -56,5 +57,11 @@ protected:
 	void Look(const FInputActionValue& Value);
 
 	virtual void Jump() override;
+
+	void Attack();
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	class UAnimMontage* AttackMontage;
 
 };

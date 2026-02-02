@@ -67,6 +67,11 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		{
 			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMyCharacter::Look);
 		}
+
+		if (AttackAction)
+		{
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &AMyCharacter::Attack);
+		}
 	}
 
 }
@@ -115,11 +120,7 @@ void AMyCharacter::Jump()
 {
 	Super::Jump();
 
-	IsJumping = true;
-
 	UE_LOG(LogTemp, Log, TEXT("AMyCharacter::Jump"));
-
-	IsJumping = false;
 }
 
 void AMyCharacter::Look(const FInputActionValue& Value)
@@ -129,4 +130,14 @@ void AMyCharacter::Look(const FInputActionValue& Value)
 	AddControllerYawInput(LookAxisVector.X);
 
 	AddControllerPitchInput(-LookAxisVector.Y);
+}
+
+void AMyCharacter::Attack()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Play(AttackMontage);
+	}
 }
