@@ -7,6 +7,9 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/GameEngine.h"
+#include "DrawDebugHelpers.h"
 
 // Sets default values
 AMyCharacter::AMyCharacter()
@@ -26,6 +29,10 @@ void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	CurrentHealth = MaxHealth;
+
+	GetMesh()->SetSimulatePhysics(false);
+
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		if (PC->PlayerCameraManager)
@@ -34,6 +41,7 @@ void AMyCharacter::BeginPlay()
 			PC->PlayerCameraManager->ViewPitchMax = 30.0f;  // 위로 올려다보는 각도 제한
 		}
 	}
+
 }
 
 // Called every frame
@@ -71,6 +79,11 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		if (AttackAction)
 		{
 			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &AMyCharacter::Attack);
+		}
+
+		if (RollAction)
+		{
+			EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Triggered, this, &AMyCharacter::Roll);
 		}
 	}
 
@@ -132,12 +145,90 @@ void AMyCharacter::Look(const FInputActionValue& Value)
 	AddControllerPitchInput(-LookAxisVector.Y);
 }
 
-void AMyCharacter::Attack()
+void AMyCharacter::Attack(const FInputActionValue& Value)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 	if (AnimInstance)
 	{
 		AnimInstance->Montage_Play(AttackMontage);
+		UE_LOG(LogTemp, Log, TEXT("AMyCharacter::Attack"));
+		IsAttack();
 	}
+}
+
+void AMyCharacter::Roll(const FInputActionValue& Value)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance&&!AnimInstance->Montage_IsPlaying(RollMontage))
+	{
+		AnimInstance->Montage_Play(RollMontage);
+	}
+}
+
+float AMyCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
+{
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	CurrentHealth = FMath::Clamp(CurrentHealth - ActualDamage, 0.0f, MaxHealth);
+
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("CurrentHp : %.2f"), CurrentHealth));
+
+	// 3. 사망 판정
+	if (CurrentHealth <= 0)
+	{
+		Die();
+	}
+
+	return ActualDamage;
+}
+
+void AMyCharacter::IsAttack()
+{
+	FHitResult HitResult;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(Attack), false, this);
+
+	// 1. 캡슐 설정 (가로로 누울 것이므로 HalfHeight가 가로 길이가 됨)
+	float CapsuleRadius = 30.f;
+	float CapsuleHalfHeight = 90.f; // 양옆으로 뻗는 길이
+
+	// 2. 위치 설정: 플레이어 발 밑이 아니라 가슴 높이(+50) 정도로 올림
+	FVector CenterLocation = GetActorLocation() + (GetActorForwardVector() * 100.f) + (GetActorUpVector() * 30.f);
+
+	// 3. 캡슐 눕히기 (Pitch를 90도 회전시켜 가로로 만듦)
+	// 캐릭터의 현재 회전값에 Pitch 90도를 더함
+	FRotator CapsuleRotator = GetActorRotation();
+	CapsuleRotator.Pitch += 90.f;
+	FQuat CapsuleQuat = FQuat(CapsuleRotator);
+
+	// 4. 캡슐 판정 수행 (가로로 누운 상태이므로 위치 이동 없이 중심점에서 즉시 검사)
+	bool bHasHit = GetWorld()->SweepSingleByChannel(
+		HitResult,
+		CenterLocation,
+		CenterLocation, // 시작과 끝을 같게 하면 그 자리에서 즉시 충돌 검사
+		CapsuleQuat,
+		ECollisionChannel::ECC_Visibility,
+		FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight),
+		Params
+	);
+
+	// 5. 디버그 캡슐 그리기
+	FColor DrawColor = bHasHit ? FColor::Green : FColor::Red;
+	DrawDebugCapsule(GetWorld(), CenterLocation, CapsuleHalfHeight, CapsuleRadius, CapsuleQuat, DrawColor, false, 2.0f);
+
+	if (bHasHit)
+	{
+		if (AActor* HitActor = HitResult.GetActor())
+		{
+			UGameplayStatics::ApplyDamage(HitActor, AttackDamage, GetController(), this, UDamageType::StaticClass());
+			UE_LOG(LogTemp, Log, TEXT("Hit Actor: %s"), *HitActor->GetName());
+		}
+	}
+}
+
+void AMyCharacter::Die()
+{
+	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+	GetMesh()->SetSimulatePhysics(true);
 }

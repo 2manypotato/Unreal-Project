@@ -22,6 +22,7 @@ void UMyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		MoveSpeed = MyCharacter->GetVelocity().Size2D();
 
 		bIsFalling = MyCharacter->GetCharacterMovement()->IsFalling();
+
+		bIsAttacking = MyCharacter->bIsAttacking;
 	}
 }
-

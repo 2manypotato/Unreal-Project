@@ -28,6 +28,9 @@ class PROJECT_API AMyCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* AttackAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* RollAction;
+
 public:
 	// Sets default values for this character's properties
 	AMyCharacter();
@@ -49,6 +52,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool IsJumping;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsAttacking;
+
 protected:
 	UFUNCTION()
 	void Move(const FInputActionValue& Value);
@@ -58,10 +64,35 @@ protected:
 
 	virtual void Jump() override;
 
-	void Attack();
+	UFUNCTION()
+	void Attack(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void Roll(const FInputActionValue& Value);
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	class UAnimMontage* AttackMontage;
+	UAnimMontage* AttackMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UAnimMontage* RollMontage;
+
+public:
+	UFUNCTION()
+	void IsAttack();
+
+	UFUNCTION()
+	void Die();
+
+	float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
+	float CurrentHealth;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
+	float MaxHealth = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
+	float AttackDamage = 20.0f;
 };

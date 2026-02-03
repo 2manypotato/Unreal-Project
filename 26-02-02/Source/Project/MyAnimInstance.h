@@ -15,6 +15,7 @@ class PROJECT_API UMyAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 	
 
+public:
 
 public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
@@ -26,6 +27,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsFalling;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsAttacking;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	class AMyCharacter* MyCharacter;
