@@ -10,6 +10,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameEngine.h"
 #include "DrawDebugHelpers.h"
+#include "AIController.h"
 
 // Sets default values
 AMyCharacter::AMyCharacter()
@@ -147,14 +148,7 @@ void AMyCharacter::Look(const FInputActionValue& Value)
 
 void AMyCharacter::Attack(const FInputActionValue& Value)
 {
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-	if (AnimInstance)
-	{
-		AnimInstance->Montage_Play(AttackMontage);
-		UE_LOG(LogTemp, Log, TEXT("AMyCharacter::Attack"));
-		IsAttack();
-	}
+	ProcessAttack();
 }
 
 void AMyCharacter::Roll(const FInputActionValue& Value)
@@ -182,6 +176,18 @@ float AMyCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& Da
 	}
 
 	return ActualDamage;
+}
+
+void AMyCharacter::ProcessAttack()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Play(AttackMontage);
+		UE_LOG(LogTemp, Log, TEXT("AMyCharacter::ProcessAttack"));
+		IsAttack();
+	}
 }
 
 void AMyCharacter::IsAttack()
