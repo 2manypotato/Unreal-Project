@@ -235,6 +235,11 @@ void AMyCharacter::IsAttack()
 
 void AMyCharacter::Die()
 {
-	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
-	GetMesh()->SetSimulatePhysics(true);
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Play(DieMontage);
+		UE_LOG(LogTemp, Log, TEXT("AMyCharacter::Die"));
+	}
 }
