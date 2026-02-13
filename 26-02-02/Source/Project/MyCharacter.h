@@ -52,6 +52,9 @@ public:
 
 	virtual void PossessedBy(AController* NewController) override;
 
+	FTimerHandle MemberTimerHandle;
+	FTimerHandle TimerHandle_FireRate;
+	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool IsJumping;
@@ -98,12 +101,15 @@ public:
 	void Die();
 
 	UFUNCTION(BlueprintCallable)
+	void HandleFire();
+
+	UFUNCTION(BlueprintCallable)
 	void ProcessAttack();
 
-	float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
-
 	UFUNCTION()
-	void Shoot();
+	void ResetFire();
+
+	float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
@@ -115,9 +121,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
 	float AttackDamage = 20.0f;
 
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float FireRate = 0.5f;
+
+	bool bCanFire = true;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GamePlay")
 	FVector MuzzleOffset;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
-	TSubclassOf<AFire> ProjectileClass;
+	TSubclassOf<class AFire> ProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile")
+	USphereComponent* CollisionComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	UProjectileMovementComponent* ProjectileMovementComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	UStaticMeshComponent* ProjectileMeshComponent;
 };

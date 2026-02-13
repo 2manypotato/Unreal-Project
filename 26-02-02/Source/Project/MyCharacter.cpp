@@ -11,6 +11,10 @@
 #include "Engine/GameEngine.h"
 #include "DrawDebugHelpers.h"
 #include "AIController.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "TimerManager.h"
 
 // Sets default values
 AMyCharacter::AMyCharacter()
@@ -168,31 +172,61 @@ void AMyCharacter::Roll(const FInputActionValue& Value)
 
 void AMyCharacter::Fire(const FInputActionValue& Value)
 {
+	if (!bCanFire)
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("AMyCharacter::Fire"));
 	if (ProjectileClass)
 	{
-		FVector CameraLocation;
-		FRotator CameraRotation;
-		GetActorEyesViewPoint(CameraLocation, CameraRotation);
+		UE_LOG(LogTemp, Log, TEXT("AMyCharacter::Fire - if(projectilclass)"));
 
-		FVector MuzzleLocation = CameraLocation + FTransform(CameraRotation).TransformVector(MuzzleOffset);
-		FRotator MuzzleRotation = CameraRotation;
-		MuzzleRotation.Pitch += 10.f;
 
-		UWorld* World = GetWorld();
-		if (World)
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+		if (AnimInstance && !AnimInstance->Montage_IsPlaying(FireMontage))
 		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = this;
-			SpawnParams.Instigator = GetInstigator();
+			AnimInstance->Montage_Play(FireMontage);
+		}
 
-			AFire* Projectile = World->SpawnActor<AFire>(ProjectileClass, MuzzleLocation, MuzzleRotation, SpawnParams);
-			if (Projectile)
-			{
-				FVector LaunchDirection = MuzzleRotation.Vector();
-				Projectile->FireInDirection(LaunchDirection);
-			}
+		HandleFire();
+		
+	}
+
+	GetWorldTimerManager().SetTimer(TimerHandle_FireRate, this, &AMyCharacter::ResetFire, FireRate, false);
+}
+
+void AMyCharacter::HandleFire()
+{
+	FVector CameraLocation;
+	FRotator CameraRotation;
+	GetActorEyesViewPoint(CameraLocation, CameraRotation);
+
+	FVector MuzzleLocation = CameraLocation + FTransform(CameraRotation).TransformVector(MuzzleOffset);
+	FRotator MuzzleRotation = CameraRotation;
+	//MuzzleRotation.Pitch += 10.f;
+
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = GetInstigator();
+
+		AFire* Projectile = World->SpawnActor<AFire>(ProjectileClass, MuzzleLocation, MuzzleRotation, SpawnParams);
+		if (Projectile)
+		{
+			FVector LaunchDirection = MuzzleRotation.Vector();
+			Projectile->FireInDirection(LaunchDirection);
 		}
 	}
+}
+
+void AMyCharacter::ResetFire()
+{
+	bCanFire = true; // 다시 공격 가능하도록 변경
+	UE_LOG(LogTemp, Log, TEXT("Fire Ready"));
 }
 
 float AMyCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
@@ -276,4 +310,11 @@ void AMyCharacter::Die()
 		AnimInstance->Montage_Play(DieMontage);
 		UE_LOG(LogTemp, Log, TEXT("AMyCharacter::Die"));
 	}
+
+	GetWorldTimerManager().SetTimer(MemberTimerHandle, [this]()
+		{
+			this->Destroy();
+		}, 3.0f, false);
+
+	
 }

@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
+#include "Kismet/GameplayStatics.h"
 #include "Fire.h"
 
 
@@ -20,6 +20,15 @@ AFire::AFire()
 	ProjectileMovementComponent->MaxSpeed = 3000.f;
 	ProjectileMovementComponent->bRotationFollowsVelocity = true;
 	ProjectileMovementComponent->bShouldBounce = false;
+	ProjectileMovementComponent->Bounciness = 0.3f;
+	ProjectileMovementComponent->ProjectileGravityScale = 0.0f;
+
+	if (!ProjectileMeshComponent)
+	{
+		ProjectileMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMeshComponent"));
+
+		ProjectileMeshComponent->SetupAttachment(RootComponent);
+	}
 
 }
 
@@ -28,6 +37,11 @@ void AFire::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (CollisionComponent)
+	{
+		CollisionComponent->OnComponentHit.AddDynamic(this, &AFire::Onhit);
+	}
+
 }
 
 // Called every frame
@@ -40,4 +54,19 @@ void AFire::Tick(float DeltaTime)
 void AFire::FireInDirection(const FVector& ShootDirection)
 {
 	ProjectileMovementComponent->Velocity = ShootDirection * ProjectileMovementComponent->InitialSpeed;
+}
+
+void AFire::Onhit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (OtherActor && (OtherActor != this) && (OtherActor != GetOwner()))
+	{
+		// 2. 데미지 전달 (ApplyDamage 사용)
+		// 10.0f는 감소시킬 HP 양입니다.
+		UGameplayStatics::ApplyDamage(OtherActor, DamageAmount, GetInstigatorController(), this, UDamageType::StaticClass());
+
+		UE_LOG(LogTemp, Log, TEXT("Hit target : %s"), *OtherActor->GetName());
+
+		// 3. 이펙트 생성이나 사운드 재생 후 발사체 파괴
+		Destroy();
+	}
 }

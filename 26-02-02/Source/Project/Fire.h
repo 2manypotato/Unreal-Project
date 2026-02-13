@@ -32,5 +32,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	UProjectileMovementComponent* ProjectileMovementComponent;
 
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	UStaticMeshComponent* ProjectileMeshComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float DamageAmount = 50.0f;
+
 	void FireInDirection(const FVector& ShootDirection);
+	
+	UFUNCTION()
+	void Onhit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 };
